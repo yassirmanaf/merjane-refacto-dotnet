@@ -69,6 +69,37 @@ namespace Refacto.Dotnet.Controllers.Tests.Controllers
             Assert.Equal(resultOrder.Id, order.Id);
         }
 
+        [Fact]
+        public async Task ProcessOrder_Should_DecreaseAvailableStock_ForNormalProduct()
+        {
+            // GIVEN
+            HttpClient client = _factory.CreateClient();
+
+            List<Product> allProducts = CreateProducts();
+            HashSet<Product> orderItems = new(allProducts);
+            Order order = CreateOrder(orderItems);
+
+            await _context.Products.AddRangeAsync(allProducts);
+            _ = await _context.Orders.AddAsync(order);
+            _ = await _context.SaveChangesAsync();
+            _context.ChangeTracker.Clear();
+
+            // WHEN
+            HttpResponseMessage response = await client.PostAsync($"/orders/{order.Id}/processOrder", null);
+            _ = response.EnsureSuccessStatusCode();
+
+            // THEN
+            Order? resultOrder = await _context.Orders
+                .Include(o => o.Items)
+                .SingleOrDefaultAsync(o => o.Id == order.Id);
+
+            Assert.NotNull(resultOrder);
+
+            Product? usbCable = resultOrder.Items.SingleOrDefault(p => p.Name == "USB Cable");
+            Assert.NotNull(usbCable);
+            Assert.Equal(29, usbCable.Available);
+        }
+
         private static Order CreateOrder(HashSet<Product> products)
         {
             return new Order { Items = products };

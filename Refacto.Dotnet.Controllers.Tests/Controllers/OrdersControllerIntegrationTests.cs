@@ -9,13 +9,13 @@ using Refacto.DotNet.Controllers.Services;
 namespace Refacto.Dotnet.Controllers.Tests.Controllers
 {
     [Collection("Sequential")]
-    public class MyControllerIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+    public class OrdersControllerIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;
         private readonly AppDbContext _context;
         private readonly Mock<INotificationService> _mockNotificationService;
 
-        public MyControllerIntegrationTests(WebApplicationFactory<Program> factory)
+        public OrdersControllerIntegrationTests(WebApplicationFactory<Program> factory)
         {
             _mockNotificationService = new Mock<INotificationService>();
 

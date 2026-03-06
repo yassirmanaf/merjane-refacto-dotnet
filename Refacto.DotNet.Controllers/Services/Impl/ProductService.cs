@@ -25,47 +25,64 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 
         public void ProcessProduct(Product p)
         {
-            if (p.Type == "NORMAL")
+            switch(p.Type)
+            {
+                case "NORMAL":
+                    ProcessNormalProduct(p);
+                    break;
+
+                case "SEASONAL":
+                    ProcessSeasonalProduct(p);
+                    break;
+
+                case "EXPIRABLE":
+                    ProcessExpirableProduct(p);
+                    break;
+            }
+        }
+
+        private void ProcessNormalProduct(Product p)
+        {
+            if (p.Available > 0)
+            {
+                p.Available -= 1;
+                _ctx.Entry(p).State = EntityState.Modified;
+                _ = _ctx.SaveChanges();
+            }
+            else
+            {
+                int leadTime = p.LeadTime;
+                if (leadTime > 0)
                 {
-                    if (p.Available > 0)
-                    {
-                        p.Available -= 1;
-                        _ctx.Entry(p).State = EntityState.Modified;
-                        _ = _ctx.SaveChanges();
-                    }
-                    else
-                    {
-                        int leadTime = p.LeadTime;
-                        if (leadTime > 0)
-                        {
-                            NotifyDelay(leadTime, p);
-                        }
-                    }
+                    NotifyDelay(leadTime, p);
                 }
-                else if (p.Type == "SEASONAL")
-                {
-                    if (DateTime.Now.Date > p.SeasonStartDate && DateTime.Now.Date < p.SeasonEndDate && p.Available > 0)
-                    {
-                        p.Available -= 1;
-                        _ = _ctx.SaveChanges();
-                    }
-                    else
-                    {
-                        HandleSeasonalProduct(p);
-                    }
-                }
-                else if (p.Type == "EXPIRABLE")
-                {
-                    if (p.Available > 0 && p.ExpiryDate > DateTime.Now.Date)
-                    {
-                        p.Available -= 1;
-                        _ = _ctx.SaveChanges();
-                    }
-                    else
-                    {
-                        HandleExpiredProduct(p);
-                    }
-                }
+            }
+        }
+
+        private void ProcessSeasonalProduct(Product p)
+        {
+            if (DateTime.Now.Date > p.SeasonStartDate &&
+                DateTime.Now.Date < p.SeasonEndDate &&
+                p.Available > 0)
+            {
+                p.Available -= 1;
+                _ = _ctx.SaveChanges();
+                return;
+            }
+
+            HandleSeasonalProduct(p);
+        }
+
+        private void ProcessExpirableProduct(Product p)
+        {
+            if (p.Available > 0 && p.ExpiryDate > DateTime.Now.Date)
+            {
+                p.Available -= 1;
+                _ = _ctx.SaveChanges();
+                return;
+            }
+
+            HandleExpiredProduct(p);
         }
 
         private void HandleSeasonalProduct(Product p)

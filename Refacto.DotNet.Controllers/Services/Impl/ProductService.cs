@@ -7,6 +7,11 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 {
     public class ProductService : IProductService
     {
+
+        private const string NormalProductType = "NORMAL";
+        private const string SeasonalProductType = "SEASONAL";
+        private const string ExpirableProductType = "EXPIRABLE";
+
         private readonly INotificationService _ns;
         private readonly AppDbContext _ctx;
 
@@ -27,15 +32,15 @@ namespace Refacto.DotNet.Controllers.Services.Impl
         {
             switch(p.Type)
             {
-                case "NORMAL":
+                case NormalProductType:
                     ProcessNormalProduct(p);
                     break;
 
-                case "SEASONAL":
+                case SeasonalProductType:
                     ProcessSeasonalProduct(p);
                     break;
 
-                case "EXPIRABLE":
+                case ExpirableProductType:
                     ProcessExpirableProduct(p);
                     break;
             }
@@ -61,8 +66,10 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 
         private void ProcessSeasonalProduct(Product p)
         {
-            if (DateTime.Now.Date > p.SeasonStartDate &&
-                DateTime.Now.Date < p.SeasonEndDate &&
+            var today = DateTime.Now.Date;
+
+            if (today > p.SeasonStartDate &&
+                today < p.SeasonEndDate &&
                 p.Available > 0)
             {
                 p.Available -= 1;
@@ -75,7 +82,9 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 
         private void ProcessExpirableProduct(Product p)
         {
-            if (p.Available > 0 && p.ExpiryDate > DateTime.Now.Date)
+            var today = DateTime.Now.Date;
+
+            if (p.Available > 0 && p.ExpiryDate > today)
             {
                 p.Available -= 1;
                 _ = _ctx.SaveChanges();
@@ -87,7 +96,9 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 
         private void HandleSeasonalProduct(Product p)
         {
-            if (DateTime.Now.AddDays(p.LeadTime) > p.SeasonEndDate)
+            var today = DateTime.Now;
+
+            if (today.AddDays(p.LeadTime) > p.SeasonEndDate)
             {
                 _ns.SendOutOfStockNotification(p.Name);
                 p.Available = 0;
@@ -106,7 +117,9 @@ namespace Refacto.DotNet.Controllers.Services.Impl
 
         private void HandleExpiredProduct(Product p)
         {
-            if (p.Available > 0 && p.ExpiryDate > DateTime.Now)
+            var now = DateTime.Now;
+
+            if (p.Available > 0 && p.ExpiryDate > now)
             {
                 p.Available -= 1;
                 _ = _ctx.SaveChanges();
